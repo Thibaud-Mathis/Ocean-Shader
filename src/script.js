@@ -2,12 +2,27 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
+import waterVertexShader from './shaders/water/vertex.glsl'
+import waterFragmentShader from './shaders/water/fragment.glsl'
+
+console.log(waterVertexShader);
+
+/**
+ * Loaders
+ */
+// conts glslLoader = 
 
 /**
  * Base
  */
 // Debug
 const gui = new dat.GUI({ width: 340 })
+const debugObject = {}
+debugObject.depthColor = "#0000ff"
+debugObject.surfaceColor = "#8888ff"
+
+gui.addColor(debugObject, 'depthColor').onChange(() => { waterMaterial.uniforms.u_DepthColor.value.set(debugObject.depthColor) }).name('depthColor')
+gui.addColor(debugObject, 'surfaceColor').onChange(() => { waterMaterial.uniforms.u_SurfaceColor.value.set(debugObject.surfaceColor) }).name('surfaceColor')
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -22,7 +37,30 @@ const scene = new THREE.Scene()
 const waterGeometry = new THREE.PlaneBufferGeometry(2, 2, 128, 128)
 
 // Material
-const waterMaterial = new THREE.MeshBasicMaterial()
+const waterMaterial = new THREE.ShaderMaterial({
+    vertexShader: waterVertexShader,
+    fragmentShader: waterFragmentShader,
+    uniforms: 
+    {
+        u_bigWavesElevations: { value: 0.2 },
+        u_bigWavesFrequency: { value: new THREE.Vector2(3.0, 5.0) },
+        u_time: { value: 0 },
+        u_bigWaveSpeed: { value: 0.75 },
+
+        u_DepthColor: { value: new THREE.Color()},
+        u_SurfaceColor: { value: new THREE.Color()},
+        u_ColorMultiplier : { value: 0.5 },
+        u_ColorOffset : { value: 0.5 },
+    }
+})
+
+gui.add(waterMaterial.uniforms.u_ColorMultiplier, 'value').min(0).max(10).step(0.001).name('color multiplier')
+gui.add(waterMaterial.uniforms.u_ColorOffset, 'value').min(0).max(5).step(0.001).name('color offset')
+gui.add(waterMaterial.uniforms.u_bigWavesElevations, 'value').min(0).max(1).step(0.00001).name('wave elevation')
+gui.add(waterMaterial.uniforms.u_bigWavesFrequency.value, 'x').min(0).max(15).step(0.00001).name('wave frequency X')
+gui.add(waterMaterial.uniforms.u_bigWavesFrequency.value, 'y').min(0).max(15).step(0.00001).name('wave frequency Y')
+gui.add(waterMaterial.uniforms.u_bigWaveSpeed, 'value').min(0).max(5).step(0.00001).name('wave speed')
+
 
 // Mesh
 const water = new THREE.Mesh(waterGeometry, waterMaterial)
@@ -81,7 +119,7 @@ const clock = new THREE.Clock()
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
-
+    waterMaterial.uniforms.u_time.value = elapsedTime
     // Update controls
     controls.update()
 
